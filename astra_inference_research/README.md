@@ -17,7 +17,7 @@ Upstream inference entrypoint: Astra/scripts/infer_demo.py
 | No-cache baseline with forward counts and CUDA events | Implemented, GPU run NOT verified |
 | Opt-in fixed-interval DiT block residual reuse | Research prototype, NOT quality validated |
 | Per-branch cache isolation and clearing between AR chunks | Implemented |
-| Per-chunk first-step global feature fingerprints | Analysis only, NOT a cross-chunk cache |
+| Pooled activation similarities across steps/chunks (opt-in) | Analysis only, NOT token alignment |
 | JSON experiment metadata; elapsed time; peak GPU memory | Implemented |
 | Paired video pixel deviation and run comparison | Implemented |
 | Cross-chunk cache with positional token alignment | **TODO / NOT IMPLEMENTED** |
@@ -114,7 +114,7 @@ At denoising steps divisible by interval, the chosen blocks execute normally and
 
 This is **not** a free lunch. Caching residuals consumes GPU memory. Large quality changes may make it unsuitable. The first safe experiment is to run a single selected block with interval 2 and compare both runtime and generated output. The baseline must run with caching disabled.
 
-For inter-chunk research, the probe records pooled hidden vectors at the first denoising step for selected blocks. This is a coarse descriptor; it **does not** align FramePack token positions. A high cosine similarity cannot justify direct cross-chunk token reuse. Implement cross-chunk acceleration only after mapping history tokens across chunks.
+For intra-step research, enable probe.enabled and probe.step_analysis in a separate baseline (no-cache) diagnostic run. Disable probes for both runtime-comparison runs. The probe also records pooled hidden vectors at the first denoising step across chunks. These are coarse descriptors; they **do not** align FramePack token positions. A high cosine similarity cannot justify direct cross-chunk token reuse. Implement cross-chunk acceleration only after mapping history tokens across chunks.
 
 ## Minimal experiment protocol
 
