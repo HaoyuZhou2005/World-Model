@@ -1,0 +1,48 @@
+{
+  "seed": 42,
+  "paths": {
+    "astra_repo": "TODO_ABSOLUTE_PATH_TO_OFFICIAL_ASTRA_CLONE",
+    "astra_checkpoint": "TODO_ABSOLUTE_PATH_TO_ASTRA_DIFFUSION_PYTORCH_MODEL_CKPT",
+    "wan_model_dir": "TODO_ABSOLUTE_PATH_TO_WAN2_1_T2V_1_3B",
+    "condition_image": "TODO_ABSOLUTE_PATH_TO_CONDITION_IMAGE_PNG",
+    "output_root": "../runs"
+  },
+  "generation": {
+    "initial_condition_frames": 1,
+    "frames_per_generation": 4,
+    "total_frames_to_generate": 8,
+    "max_history_frames": 100,
+    "device": "cuda",
+    "prompt": "A forward-moving camera in a well-lit street scene.",
+    "modality_type": "sekai",
+    "use_real_poses": false,
+    "use_camera_cfg": false,
+    "camera_guidance_scale": 2,
+    "text_guidance_scale": 1,
+    "moe_num_experts": 3,
+    "moe_top_k": 1,
+    "cam_type": 4,
+    "use_gt_prompt": false,
+    "add_icons": false
+  },
+  "cache": {
+    "method": "residual",
+    "block_indices": [
+      0,
+      4
+    ],
+    "interval": 2,
+    "max_age": 1,
+    "relative_threshold": null
+  },
+  "measurement": {
+    "expected_denoising_steps": 50
+  },
+  "probe": {
+    "enabled": true,
+    "block_indices": [
+      0,
+      4
+    ]
+  }
+}
