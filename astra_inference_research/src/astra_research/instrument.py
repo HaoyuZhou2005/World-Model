@@ -40,9 +40,12 @@ class AstraInstrumentation:
             relative_threshold=self.cache_config.get("relative_threshold"),
         )
         probe_config = config.get("probe", {})
+        if cache_enabled and probe_config.get("enabled", False):
+            raise ValueError("Run feature probes only with cache OFF; cached activations bias similarity")
         self.probe = ChunkProbe(
             enabled=bool(probe_config.get("enabled", False)),
             block_indices=[int(i) for i in probe_config.get("block_indices", [])],
+            step_analysis=bool(probe_config.get("step_analysis", False)),
         )
         self.expected_steps = int(config["measurement"].get("expected_denoising_steps", 50))
         gen = config["generation"]
@@ -146,7 +149,7 @@ class AstraInstrumentation:
             "dit_cuda_ms_by_chunk_step": dict(per_step),
             "selected_block_calls": dict(self.block_call_counts),
             "cache": self.cache.stats(),
-            "cross_chunk_probe": self.probe.export(),
+            "activation_probe": self.probe.export(),
             "warning": (
                 "CUDA events are instrumented timings; compare unprofiled end-to-end wall time "
                 "for actual speedups. Step/branch mapping assumes official infer_demo call order."
