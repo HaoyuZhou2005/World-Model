@@ -43,7 +43,7 @@ The AR chunk counts in the example use latent frames, not RGB video frames.
 1. Residual caching is only within one AR chunk. It is approximate, not a verified technique.
 2. All residuals clear at chunk boundaries. Future inter-chunk reuse needs verified
    token correspondence across FramePack 1x/2x/4x streams and camera/time positions.
-3. ChunkProbe reports global pooled feature cosine at the first denoising step.
+3. ChunkProbe optionally reports global pooled feature cosine within a denoising trajectory and at the first step of each chunk.
    This is **not** token-level spatial or temporal correspondence.
 4. Guidance branch indexing uses official call order. The script uses 50 steps,
    one forward per step without guidance, two with camera guidance. Text guidance
@@ -51,7 +51,7 @@ The AR chunk counts in the example use latent frames, not RGB video frames.
 5. The optional relative-threshold check adds GPU/CPU sync overhead.
 6. CUDA events measure DiT forward time. Wall clock also includes checkpoint
    loading, VAE, decoding, Python and video I/O. Report them separately.
-7. Torch profiler tracing adds substantial overhead; do not compare traced runs.
+7. Feature probes also synchronize the GPU and must be disabled for runtime comparisons. Torch profiler tracing adds substantial overhead; do not compare traced runs.
 8. GPU execution and Astra checkpoint loading have NOT been tested here.
 9. Upstream uses non-strict checkpoint loading. Unexpected/missing keys need to
    be inspected for accurate reproduction; document their count before publication.
