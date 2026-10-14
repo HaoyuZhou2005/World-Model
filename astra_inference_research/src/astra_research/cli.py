@@ -36,7 +36,7 @@ def run(args: argparse.Namespace) -> Path:
         print(json.dumps({
             "dry_run": True, "mode": args.mode,
             "paths": config["paths"], "generation": config["generation"],
-            "expected_dit": "EternalEvan/Astra:d iffsynth/models/wan_video_dit_moe.py".replace("d iffsynth", "diffsynth"),
+            "expected_dit": "EternalEvan/Astra:diffsynth/models/wan_video_dit_moe.py",
             "note": "No paths or GPU have been validated; no inference was run."
         }, ensure_ascii=False, indent=2))
         return Path(".")
@@ -68,12 +68,12 @@ def run(args: argparse.Namespace) -> Path:
     import torch
     from .adapter import run_official, seed_everything
     seed_everything(metadata["seed"])
-    if not torch.cuda.is_available():
-        raise RuntimeError("Astra inference requires a CUDA GPU")
-    torch.cuda.synchronize()
-    torch.cuda.reset_peak_memory_stats()
     start = time.perf_counter()
     try:
+        if not torch.cuda.is_available():
+            raise RuntimeError("Astra inference requires a CUDA GPU")
+        torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
         trace_path = run_dir / "torch_trace.json" if args.profiler else None
         instrument = run_official(
             paths["astra_repo"], kwargs, config,
