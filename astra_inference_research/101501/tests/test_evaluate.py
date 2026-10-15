@@ -23,7 +23,7 @@ def test_chunk_bounds_and_mae(monkeypatch):
 def test_mismatched_frame_count_is_not_silently_truncated(monkeypatch):
     monkeypatch.setattr(evaluate, "_frames",
                         lambda path: iter([np.zeros((2, 2, 3))] * (4 if str(path)=="a" else 5)))
-    with pytest.raises(ValueError, match="Expected exactly"):
+    with pytest.raises(ValueError, match="frame counts differ"):
         evaluate.evaluate_pair("a", "b", rgb_frames_per_chunk=2,
                                n_chunks=2, condition_frames=1)
 
