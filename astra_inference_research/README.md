@@ -9,7 +9,7 @@ This repository separates the original 2026-10-14 research scaffold from the
 | [101501/](101501/) | **Audited 2026-10-15 continuation**: new layer-specific residual schedule, safe per-chunk refresh, strict diagnostics/tests |
 
 The uploaded research archive `26101501.zip` (2026-10-15) was reviewed to
-design the continuation. It contains intermediate cache experiments and logs; on direct inspection the uploaded ZIP has **86 completed metadata files but 0 MP4 videos**, despite the summary's claim. These are **not automatically copied into GitHub**. See
+design the continuation. It contains intermediate cache experiments and logs; the uploaded ZIP contains **86 completed metadata files and no MP4 videos because the user deliberately omitted the already-generated videos to reduce upload size**. The videos exist outside the ZIP and are **not automatically copied into GitHub**. See
 [101501/docs/AUDIT.md](101501/docs/AUDIT.md) for provenance, evidence,
 limitations, and a detailed list of what was used or intentionally omitted.
 
