@@ -117,6 +117,7 @@ def run(config: dict, *, cache_enabled: bool, outdir: Path,
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    torch.cuda.reset_peak_memory_stats()
 
     run_dir = outdir.resolve() / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")+
                                   ("_token_" if cache_enabled else "_baseline_")+uuid.uuid4().hex[:8])
@@ -166,6 +167,9 @@ def run(config: dict, *, cache_enabled: bool, outdir: Path,
                     fn(**kwargs)
         torch.cuda.synchronize()
         result["instrumentation"]=instrument.results()
+        if instrument.collector is not None:
+            instrument.collector.save(run_dir/"teacher_local_proxy.pt")
+            result["teacher_proxy_path"]=str(run_dir/"teacher_local_proxy.pt")
         expected_chunks=(int(kwargs["total_frames_to_generate"])+
                          int(kwargs["frames_per_generation"])-1)//int(kwargs["frames_per_generation"])
         if result["instrumentation"]["full_chunks"]!=expected_chunks or not result["instrumentation"]["completed_step_alignment"]:
