@@ -72,8 +72,11 @@
     "26101501/experiments/20261014_stage_c_framepack_map/overlap_report.json"
   ],
   "limits": [
-    "No video files were provided in zip; numerical MAE cannot be independently reproduced here",
+    "Generated videos intentionally omitted from uploaded ZIP to reduce size; numerical MAE cannot be independently reproduced from the supplied attachment alone",
     "Checkpoint and source binaries were not available for validation",
     "Historical single-scene results are not proof of generalization"
-  ]
+  ],
+  "video_generation_status": "Videos were generated during the experiments, according to the user's clarification.",
+  "reason_mp4_absent_from_upload": "User deliberately removed generated videos from ZIP to reduce upload size.",
+  "video_artifacts_independently_inspected": false
 }
