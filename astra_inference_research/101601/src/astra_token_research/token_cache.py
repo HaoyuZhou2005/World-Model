@@ -29,10 +29,19 @@ class CacheState:
 
 class TokenResidualCache:
     def __init__(self, gate: TokenGate, selected_blocks: list[int],
-                 *, enabled: bool):
+                 *, enabled: bool, intervention: dict | None = None):
         self.gate = gate
         self.selected_blocks = set(selected_blocks)
         self.enabled = enabled
+        self.intervention = dict(intervention) if intervention is not None else None
+        self.observations: list[dict] = []
+        if self.intervention:
+            if set(self.intervention) != {"chunk","step","branch","block","token"}:
+                raise ValueError("Intervention needs exactly chunk/step/branch/block/token")
+            if self.intervention["step"] < 1:
+                raise ValueError("A one-token stale intervention cannot occur at first denoising step")
+            if self.selected_blocks != {int(self.intervention["block"])}:
+                raise ValueError("Intervention requires ONLY its affected block to be selected")
         self.current_chunk: int | None = None
         self.states: dict[tuple[int, int], CacheState] = {}
         self.computed_query_rows = 0
@@ -64,7 +73,33 @@ class TokenResidualCache:
             state.delta.shape != x.shape or state.delta.device != x.device):
             state = None
             self.states.pop(key, None)
-        if state is None:
+        if self.intervention is not None:
+            mask = torch.ones(layout.total, dtype=torch.bool, device=x.device)
+            match = all((
+                chunk == self.intervention["chunk"],
+                step == self.intervention["step"],
+                branch == self.intervention["branch"],
+                block_index == self.intervention["block"],
+            ))
+            if match:
+                token = int(self.intervention["token"])
+                if state is None:
+                    raise RuntimeError("Stale intervention has no preceding full-compute residual")
+                if not 0 <= token < layout.total:
+                    raise ValueError(f"Intervention token {token} outside packed layout {layout.total}")
+                # One token is stale; all other rows are fresh. This is an
+                # expensive counterfactual experiment, not acceleration.
+                mask[token] = False
+                from .features import token_features
+                features=token_features(x,state.prior_input,state.delta,
+                    state.last_refresh,layout,chunk=chunk,step=step,steps=self.gate.num_steps)
+                self.observations.append({
+                    "chunk":chunk,"step":step,"branch":branch,"block":block_index,
+                    "token":token,"feature":features[token].detach().cpu().tolist(),
+                    "stream":next(st.name for st in layout.streams if st.start<=token<st.stop),
+                    "kind":"one_token_stale_counterfactual_not_training_label",
+                })
+        elif state is None:
             mask = torch.ones(layout.total, dtype=torch.bool, device=x.device)
         else:
             mask = self.gate.select(
@@ -131,6 +166,8 @@ class TokenResidualCache:
             "reused_query_rows": self.stale_rows,
             "query_row_skip_ratio": self.stale_rows / self.total_query_rows
                 if self.total_query_rows else 0.0,
+            "intervention": self.intervention,
+            "intervention_observations": self.observations,
             "per_stream": {
                 name: {key: int(value.item()) if value is not None else 0
                        for key,value in counts.items()}
