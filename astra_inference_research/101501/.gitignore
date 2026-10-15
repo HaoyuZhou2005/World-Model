@@ -9,3 +9,12 @@ __pycache__/
 *.egg-info/
 .env
 configs/local.json
+
+# Local research server settings and heavyweight outputs
+configs/local.json
+configs/machine.json
+configs/identity_local.json
+configs/sweep_local/
+results/
+experiments/
+*.jsonl
