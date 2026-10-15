@@ -37,7 +37,8 @@ DEFAULT_VARIANTS: dict[str, dict] = {
 
 
 def generate(template: dict, output_root: Path, *, num_blocks: int,
-             names: list[str] | None = None) -> dict:
+             names: list[str] | None = None,
+             template_base: Path | None = None) -> dict:
     if num_blocks <= 0:
         raise ValueError("num_blocks must be positive")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,22 @@ def generate(template: dict, output_root: Path, *, num_blocks: int,
             raise ValueError(f"Unknown variant {name}")
         spec = deepcopy(DEFAULT_VARIANTS[name])
         config = deepcopy(template)
+        # Moving configs/local.json into configs/sweep_local/ changes the meaning
+        # of relative paths. Resolve against the ORIGINAL config directory.
+        if template_base is not None:
+            for key, value in config.get("paths", {}).items():
+                if not isinstance(value, str) or not value or "TODO_" in value:
+                    continue
+                path = Path(value).expanduser()
+                if not path.is_absolute():
+                    config["paths"][key] = str((template_base / path).resolve())
+            for key in ("condition_pth", "condition_video", "scene_info_path"):
+                value = config.get("generation", {}).get(key)
+                if not isinstance(value, str) or not value or "TODO_" in value:
+                    continue
+                path = Path(value).expanduser()
+                if not path.is_absolute():
+                    config["generation"][key] = str((template_base / path).resolve())
         c = spec["cache"]
         # 30 is the verified block count in garden_1 experiment, but it is NOT
         # a universal Astra architecture property. Explicit --num-blocks is required.
@@ -81,7 +98,8 @@ def main() -> None:
     parser.add_argument("--variants", nargs="*")
     args = parser.parse_args()
     cfg = json.loads(Path(args.template).read_text(encoding="utf-8"))
-    manifest = generate(cfg, Path(args.out), num_blocks=args.num_blocks, names=args.variants)
+    manifest = generate(cfg, Path(args.out), num_blocks=args.num_blocks, names=args.variants,
+                        template_base=Path(args.template).expanduser().resolve().parent)
     print(json.dumps(manifest, indent=2, ensure_ascii=False))
 
 
