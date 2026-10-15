@@ -13,6 +13,7 @@ import uuid
 
 from .config import fingerprint, generation_kwargs, load_config, preflight, resolve_path
 from .report import compare, paired_video_metrics
+from .identity import source_hashes
 
 
 def git_revision(repo: Path) -> str:
@@ -59,6 +60,7 @@ def run(args: argparse.Namespace) -> Path:
         "config_fingerprint": config_hash,
         "effective_config": sanitized, "generation_kwargs": kwargs,
         "astra_revision": git_revision(paths["astra_repo"]),
+        "upstream_files_sha256": source_hashes(paths["astra_repo"]),
         "torch_profiler": bool(args.profiler),
         "generated_video": str(output_file),
         "started_utc": datetime.now(timezone.utc).isoformat(),
