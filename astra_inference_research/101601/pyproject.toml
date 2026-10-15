@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astra-token-research"
+version = "0.1.0"
+description = "Token-level selective Astra autoregressive world-model caching"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8", "torch>=2.2"]
+
+[project.scripts]
+astra-token = "astra_token_research.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
