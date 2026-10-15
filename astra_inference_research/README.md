@@ -16,3 +16,17 @@ limitations, and a detailed list of what was used or intentionally omitted.
 For new work begin with [101501/README.md](101501/README.md).
 
 **No world-model re-training; no claims of GPU validation of the new 101501 code.**
+
+
+## 2026-10-16: 101601 restores token-level scope
+
+- [101601/](101601/) is a NEW research branch built from the actual seven-page
+  Dual-Horizon AdaptiveCache proposal and the 26101502 feedback.
+- It is not another whole-block K/interval schedule. It implements per-token
+  selected-query compute, FramePack token grouping, token gate studies, and
+  one-token future rollout counterfactual training-data interfaces.
+- [101601 docs/RESEARCH_PLAN.md](101601/docs/RESEARCH_PLAN.md) records the
+  exact scientific scope and honest limitations.
+- 101501 remains the block-level baseline, not a prerequisite to 101601.
+- GPU inference, full Astra numerical equality, teacher-trained gate
+  generalization and end-to-end speedup are **NOT YET VALIDATED**.
