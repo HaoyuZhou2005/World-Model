@@ -43,6 +43,13 @@ def normalized_config(data: dict[str, Any]) -> dict[str, Any]:
 
 def compare_pair(base: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
     mismatches = []
+    gpu_a = base.get("gpu_preflight")
+    gpu_b = candidate.get("gpu_preflight")
+    if gpu_a and gpu_b:
+        if (gpu_a.get("index"), gpu_a.get("name")) != (gpu_b.get("index"), gpu_b.get("name")):
+            mismatches.append("physical GPU mismatch")
+    elif gpu_a or gpu_b:
+        mismatches.append("GPU identity only present in one run")
     if base.get("mode") != "baseline" or candidate.get("mode") != "cache":
         mismatches.append("baseline/cache run modes")
     if base.get("seed") != candidate.get("seed"):
