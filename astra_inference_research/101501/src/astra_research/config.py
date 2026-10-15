@@ -36,6 +36,9 @@ def load_config(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"Unsupported generation keys: {sorted(unexpected)}")
     if config["generation"].get("total_frames_to_generate", 0) <= 0:
         raise ValueError("total_frames_to_generate must be positive (latent frames)")
+    prompt = str(config["generation"].get("prompt", ""))
+    if "TODO_" in prompt:
+        raise ValueError("Fill in the original baseline prompt before GPU experiments")
     if config["generation"].get("frames_per_generation", 0) <= 0:
         raise ValueError("frames_per_generation must be positive (latent frames)")
     cache = config["cache"]
