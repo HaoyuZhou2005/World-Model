@@ -107,3 +107,34 @@ python -m astra_research.study pairs \
 Paired runs must have identical seed, model/input configuration, source evidence and weight manifests. Results separately report DiT speedup and end-to-end speedup. Multiple scenes and repetitions are required before publication.
 
 **Critical limits:** A cached residual skips a DiT block inside one chunk; every chunk clears the cache. K=4 is *boundary re-computation*, not reuse across chunks. The current policy is deterministic/rule-based, not a trained adaptive gate. The newly written policies are experimental until official no-cache equivalence and CUDA quality tests pass.
+
+
+## Optional ABBA sequential runner (single GPU; never trains)
+
+The driver is **dry-run by default**. Use it only after the previous
+identity/source and official-baseline equivalence checks have passed.
+
+~~~bash
+# No GPU action: print 2 cycles of baseline → cache → cache → baseline.
+python -m astra_research.abba \
+ --manifest configs/sweep_local/manifest.json \
+ --baseline baseline --cache uniform_i2_k4 \
+ --cycles 2 --logs /YOUR/DATA6/tmp/abba_101501
+
+# Run expensive inference only after manual nvidia-smi inspection.
+# export CUDA_VISIBLE_DEVICES=THE_IDLE_PHYSICAL_GPU
+python -m astra_research.abba \
+ --manifest configs/sweep_local/manifest.json \
+ --baseline baseline --cache uniform_i2_k4 \
+ --cycles 2 --logs /YOUR/DATA6/tmp/abba_101501 \
+ --execute
+
+python -m astra_research.abba_report \
+ --manifest /YOUR/DATA6/tmp/abba_101501/abba_results.json \
+ --out /YOUR/DATA6/tmp/abba_101501/summary.json
+~~~
+
+The runner executes sequentially (not concurrently), stops on the first
+failure, and stores stdout/stderr per run. The report rejects mismatched
+source code, weights, generation parameters, seeds, profiles or GPU identities.
+**Do not run automatically on a shared machine unless explicitly intended.**
