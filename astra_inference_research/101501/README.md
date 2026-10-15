@@ -1,140 +1,109 @@
-# Astra Inference Optimization Research
+# 101501 | Astra inference optimization — audited continuation
 
-**Research scaffold, not a validated acceleration result.** This directory lives independently of the existing World-Model models/ and note/ folders.
+**Status:** Code implemented for the next experimental phase; GPU and official-checkpoint integration tests NOT run in this session. No new model training.
 
-Goal: use the **published ICLR 2026 Astra** model and released Wan2.1-based checkpoint, without training, to study **denoising-step redundancy**, approximate **residual reuse inside a chunk**, and **cross-chunk feature similarity**. The official Astra AR rollout, FramePack history, camera conditioning, MoAE, and decoding remain in place.
+- Original GitHub scaffold is preserved in **[../101401/](../101401/)**.
+- This is **101501**, based on an audit of the uploaded `26101501.zip`.
+- Audit: **[docs/AUDIT.md](docs/AUDIT.md)**.
+- Detailed local commands and validation plan: **[docs/NEXT_EXPERIMENTS.md](docs/NEXT_EXPERIMENTS.md)**.
 
-Official source: https://github.com/EternalEvan/Astra
-Official weights: https://huggingface.co/EvanEternal/Astra
-Upstream inference entrypoint: Astra/scripts/infer_demo.py
+**Important source discrepancy:** The uploaded archive contains **86 completed metadata.json files but no MP4s**. Old video-quality numbers are drawn from the saved summaries; the new code cannot recalculate them until the actual videos are obtained from the server.
 
-## What works in source code
+## Scientific starting point
 
-| Function | State |
+The upload reports (garden_1, seed 0, 3 × 8 latent frames, 50 denoise steps):
+
+| Policy | DiT time | DiT speedup | MAE vs no-cache | MAE over chunks |
+| --- | --- | --- | --- | --- |
+| No cache | 138.6 s | 1× | — | — |
+| Whole-block residual interval-2 | 71.2 s | 1.95× | 10.40 | 5.59 / 11.20 / 14.63 |
+| interval-2 + first 2 steps full | 73.9 s | 1.88× | 8.95 | 5.89 / 9.08 / 12.06 |
+| interval-2 + first 4 steps full | 76.8 s | 1.80× | 8.10 | 5.24 / 7.51 / 11.72 |
+
+These are **DiT CUDA event times**, not end-to-end inference speedups.
+MAE is to a no-cache *generated* video, not to ground truth.
+These numbers are **historical reports**, not measurements of 101501 code.
+
+**New hypothesis:** vary block refresh periods and chunk-boundary refresh windows independently; test if a Pareto improvement over uniform interval-2+K4 exists.
+
+## Implemented modules
+
+| Source | Function |
 | --- | --- |
-| Configuration validation; no fabricated local paths | Implemented |
-| Original Astra inference invoked in-process | Adapter implemented, GPU run NOT verified |
-| No-cache baseline with forward counts and CUDA events | Implemented, GPU run NOT verified |
-| Opt-in fixed-interval DiT block residual reuse | Research prototype, NOT quality validated |
-| Per-branch cache isolation and clearing between AR chunks | Implemented |
-| Pooled activation similarities across steps/chunks (opt-in) | Analysis only, NOT token alignment |
-| JSON experiment metadata; elapsed time; peak GPU memory | Implemented |
-| Paired video pixel deviation and run comparison | Implemented |
-| Cross-chunk cache with positional token alignment | **TODO / NOT IMPLEMENTED** |
-| Learned token/frame gate, trained policy | **TODO / NOT IMPLEMENTED** |
-| Benchmark quality metrics (FVD, VBench, camera pose, etc.) | **TODO / NOT IMPLEMENTED** |
+| src/astra_research/scheduled_cache.py | Per-block refresh period, chunk-specific K, fail-closed cache reuse |
+| src/astra_research/instrument.py | Official WanModelMoe block instrumentation; no model weights changed |
+| src/astra_research/experiment_plan.py | Ablation matrix generator |
+| src/astra_research/benchmark.py | Strict matched repeated-run benchmarking |
+| src/astra_research/evaluate.py | Exact-frame video output deviation by chunk |
+| src/astra_research/identity.py | One-time SHA256 manifest for Astra source and all four model files |
+| src/astra_research/study.py | Offline CLI for config matrix, pair analysis, video diagnostics |
+| src/astra_research/adapter.py | Official Astra process adapter (from 101401) |
+| tests/ | Synthetic CPU tests; do not prove CUDA correctness |
 
-Do not report expected speedups or FLOPs. Model loading, VAE, decoding and profiling hooks can change wall time. The residual method deliberately changes DiT predictions; it needs full AR rollout quality evaluation.
+No frame/token learned gate and no valid cross-chunk feature reuse have been added.
 
-## Directory structure
-
-~~~text
-astra_inference_research/
-├── README.md
-├── .gitignore
-├── pyproject.toml
-├── configs/example.json
-├── docs/INTEGRATION.md
-├── src/astra_research/
-│   ├── __init__.py
-│   ├── config.py       # fail-closed config, path preflight
-│   ├── adapter.py      # dynamically call official Astra inference
-│   ├── instrument.py   # DiT/block hooks, timing, call-order mapping
-│   ├── cache.py        # approximate denoising-step residual cache
-│   ├── probe.py        # pooled feature statistics across AR chunks
-│   ├── report.py       # saved-run comparison and video deviation
-│   └── cli.py          # doctor / run / compare
-└── tests/
-    ├── test_cache.py
-    └── test_config.py
-~~~
-
-## Install and configure
-
-A CUDA Linux environment with compatible PyTorch is expected. The official repository says a 24 GB GPU (such as RTX 3090) can run its example. Hardware compatibility is not verified by this scaffold.
+## Install in your configured GPU server
 
 ~~~bash
-git clone https://github.com/EternalEvan/Astra.git /YOUR/Astra
-cd /YOUR/Astra
-pip install -e .
-
-cd /YOUR/World-Model/astra_inference_research
-pip install -e ".[dev]"
-cp configs/example.json configs/local.json
+cd /YOUR/World-Model/astra_inference_research/101501
+python -m pip install -e ".[dev]"
+python -m pytest -q tests/
+cp configs/scheduled_example.json configs/local.json
 ~~~
 
-Edit only your own configs/local.json (ignored by Git). Replace these placeholders:
-
-- TODO_ABSOLUTE_PATH_TO_OFFICIAL_ASTRA_CLONE
-- TODO_ABSOLUTE_PATH_TO_ASTRA_DIFFUSION_PYTORCH_MODEL_CKPT
-- TODO_ABSOLUTE_PATH_TO_WAN2_1_T2V_1_3B
-- TODO_ABSOLUTE_PATH_TO_CONDITION_IMAGE_PNG
-
-The example has 50 denoising steps, 4 latent frames per chunk, 8 latent generated frames total, 3 MoE experts/Top-K 1, and camera type 4. These are initial study settings based on the checked official inference script, **not published benchmark settings**. Match the official checkpoint and your benchmark configs before serious experiments. Never use an unverified checkpoint with a guessed MoE layout.
-
-## Run
+1. Fill `configs/local.json` paths and the original verified garden prompt.
+2. Hash the official model files **once** before running, with the commands below.
+3. Put that manifest path in `paths.identity_manifest` (required by doctor/inference).
 
 ~~~bash
-# Works without checking for a GPU; prints configured values/placeholders.
-python -m astra_research.cli run --config configs/example.json --mode baseline --dry-run
+python -m astra_research.identity \
+  --astra-repo /TODO/Astra \
+  --astra-ckpt /TODO/Astra/checkpoints/diffusion_pytorch_model.ckpt \
+  --wan-dir /TODO/Wan2.1-T2V-1.3B \
+  --out configs/identity_local.json
 
-# Verifies your real paths, without loading model weights.
 python -m astra_research.cli doctor --config configs/local.json
-
-# Vanilla Astra (feature cache disabled); saves generated.mp4 and metadata.json.
-python -m astra_research.cli run --config configs/local.json --mode baseline
-
-# Experimental within-chunk residual reuse, SAME model and inputs.
-python -m astra_research.cli run --config configs/local.json --mode cache
-
-# Compare the two generated run folders.
-python -m astra_research.cli compare \
-  --reference runs/BASELINE_RUN_FOLDER \
-  --candidate runs/CACHE_RUN_FOLDER \
-  --video-metrics
-
-# Optional slow profiler trace; NEVER use traced times for speedup tables.
-python -m astra_research.cli run --config configs/local.json --mode baseline --profiler
+python -m astra_research.study configs \
+  --template configs/local.json --out configs/sweep_local --num-blocks 30
 ~~~
 
-Note: output_root in the provided JSON is ../runs relative to configs/, so the resulting location is astra_inference_research/runs.
+**Verify `len(pipe.dit.blocks)` equals 30** for your exact checkpoint before supplying num-blocks. The prior experiment used 30; do not generalize the number to other models.
 
-For a pristine, uninstrumented reference you can run the official script with the **same config parameters** from Astra/scripts/infer_demo.py and compare the output. The baseline in this directory attaches no-cache hooks for measurement and should be checked against that unmodified output before research claims.
-
-## Cache design and limitations
-
-The first approximation is residual reuse:
-
-~~~text
-full block:    residual = block(x) - x
-reused block:  output   = x + cached_residual
-~~~
-
-At denoising steps divisible by interval, the chosen blocks execute normally and refresh the residual. Other steps may skip the block under max_age and shape/dtype/device checks. The cache is indexed by (CFG branch, block index) and cleared at every new chunk. Setting relative_threshold enables an input-change gate but causes CPU/GPU synchronization. All thresholds and block choices are examples, not tuned results.
-
-This is **not** a free lunch. Caching residuals consumes GPU memory. Large quality changes may make it unsuitable. The first safe experiment is to run a single selected block with interval 2 and compare both runtime and generated output. The baseline must run with caching disabled.
-
-For intra-step research, enable probe.enabled and probe.step_analysis in a separate baseline (no-cache) diagnostic run. Disable probes for both runtime-comparison runs. The probe also records pooled hidden vectors at the first denoising step across chunks. These are coarse descriptors; they **do not** align FramePack token positions. A high cosine similarity cannot justify direct cross-chunk token reuse. Implement cross-chunk acceleration only after mapping history tokens across chunks.
-
-## Minimal experiment protocol
-
-- Pin an exact Astra Git commit and checksum the Wan/Astra weights.
-- Verify official example inference first, then our no-cache wrapper.
-- Run identical seeds, prompt, camera trajectory, scheduler, resolution, chunk length and checkpoint.
-- Record CUDA sync wall time, DiT event time, VRAM and forward count; do NOT call skipped blocks "FLOPs saved" without correct computation accounting.
-- Test long-horizon video quality and camera control, not just pixel MAE vs baseline.
-- Repeat after warmup and report median, spread, and all hardware/driver versions.
-- Benchmark a single-chunk and a multi-chunk setting; check regression/compounding errors.
-- Save the exact JSON, SHA, run metadata and original/cached MP4.
-
-## Tests
+On the shared GPU server, inspect `nvidia-smi`, choose *one free GPU*, and set `CUDA_VISIBLE_DEVICES` yourself. Never stop someone else's process or occupy all eight cards.
 
 ~~~bash
-pytest -q tests/
+export CUDA_VISIBLE_DEVICES=TODO_IDLE_GPU
+export PYTHONPATH=$PWD/src
+python -m astra_research.cli run \
+ --config configs/sweep_local/baseline.json --mode baseline
+
+python -m astra_research.cli run \
+ --config configs/sweep_local/uniform_i2_k4.json --mode cache
 ~~~
 
-These are **CPU synthetic tests** of bookkeeping and hooks. They cannot establish that the official checkpoint loads or that GPU outputs are correct.
+These are templates. You must replace TODO values; the scripts were not run on your GPU.
 
-## Follow-up research
+## Strict video diagnostics
 
-See docs/INTEGRATION.md for exact verified upstream class/function locations, unresolved environment placeholders, current assumptions and required experiments. This stage does **not** modify or retrain Astra, and no server data, benchmark samples, or checkpoint binaries are bundled.
+After retrieving two actual `generated.mp4` files:
+
+~~~bash
+python -m astra_research.study videos \
+ --reference /YOUR/BASELINE/generated.mp4 \
+ --candidate /YOUR/CACHE/generated.mp4 \
+ --rgb-per-chunk 32 --chunks 3 --condition-frames 1
+~~~
+
+The 97-frame layout is specific to the prior run. The analyzer refuses mismatched lengths and sizes instead of silently truncating.
+
+## Strict repeated timing analysis
+
+~~~bash
+python -m astra_research.study pairs \
+ --baseline /PATH/b1 /PATH/b2 /PATH/b3 \
+ --cache /PATH/c1 /PATH/c2 /PATH/c3
+~~~
+
+Paired runs must have identical seed, model/input configuration, source evidence and weight manifests. Results separately report DiT speedup and end-to-end speedup. Multiple scenes and repetitions are required before publication.
+
+**Critical limits:** A cached residual skips a DiT block inside one chunk; every chunk clears the cache. K=4 is *boundary re-computation*, not reuse across chunks. The current policy is deterministic/rule-based, not a trained adaptive gate. The newly written policies are experimental until official no-cache equivalence and CUDA quality tests pass.
