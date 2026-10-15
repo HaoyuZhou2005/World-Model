@@ -78,8 +78,13 @@ def validate_settings(config):
                max_age=int(cache.get("max_age",1)),
                coarse_threshold=cache.get("coarse_threshold"),
                horizon_boost=float(cache.get("horizon_boost",0.0))).validate()
-    if config["token_cache"].get("policy","change_topk") != "change_topk":
-        raise ValueError("Only change_topk heuristic executable; untrained MLP gate forbidden")
+    policy=config["token_cache"].get("policy","change_topk")
+    if policy not in ("change_topk","learned","intervention"):
+        raise ValueError(f"Unknown gate policy: {policy}")
+    if policy=="learned" and not config["token_cache"].get("model_checkpoint"):
+        raise ValueError("Trained gate checkpoint must be provided")
+    if policy=="intervention" and not isinstance(config["token_cache"].get("intervention"),dict):
+        raise ValueError("One-token intervention specification is required")
     if float(g.get("text_guidance_scale",1.0)) != 1.0:
         raise ValueError("Text CFG>1 unsupported")
     if "TODO_" in str(g.get("prompt","")):
