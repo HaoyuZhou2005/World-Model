@@ -76,3 +76,29 @@ def test_generated_configs_do_not_touch_gpu(tmp_path: Path):
     assert progressive["cache"]["warmup_by_chunk"] == {"0": 1, "1": 2, "2": 4}
     baseline = json.loads(Path(manifest["baseline"]["config"]).read_text())
     assert len(baseline["cache"]["block_indices"]) == 30
+
+
+
+def test_sweep_keeps_original_relative_path_semantics(tmp_path: Path):
+    original_dir = tmp_path / "configs"
+    original_dir.mkdir()
+    template = {
+        "seed": 0,
+        "paths": {
+            "astra_repo": "../../external/Astra",
+            "identity_manifest": "identity_local.json",
+            "condition_image": "TODO_CONDITION_IMAGE",
+            "output_root": "../runs",
+        },
+        "generation": {"frames_per_generation": 8, "total_frames_to_generate": 24},
+        "cache": {}, "measurement": {},
+    }
+    import json
+    manifest = generate(template, original_dir / "sweep_local",
+                        num_blocks=30, names=["baseline"],
+                        template_base=original_dir)
+    data = json.loads(Path(manifest["baseline"]["config"]).read_text())
+    assert data["paths"]["astra_repo"] == str((original_dir / "../../external/Astra").resolve())
+    assert data["paths"]["identity_manifest"] == str((original_dir / "identity_local.json").resolve())
+    assert data["paths"]["output_root"] == str((original_dir / "../runs").resolve())
+    assert data["paths"]["condition_image"] == "TODO_CONDITION_IMAGE"
