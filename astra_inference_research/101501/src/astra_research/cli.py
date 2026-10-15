@@ -14,6 +14,7 @@ import uuid
 from .config import fingerprint, generation_kwargs, load_config, preflight, resolve_path
 from .benchmark import read_completed, compare_pair
 from .identity import source_hashes
+from .safety import ensure_idle_single_cuda
 
 
 def git_revision(repo: Path) -> str:
@@ -71,6 +72,7 @@ def run(args: argparse.Namespace) -> Path:
         return Path(".")
     paths = preflight(config)
     source_digest, weight_digest = verified_identity(paths)
+    selected_gpu = ensure_idle_single_cuda()
     if args.mode == "cache" and config["cache"].get("method") != "scheduled":
         raise ValueError("101501 cache mode requires cache.method=scheduled")
     if args.mode == "baseline" and config["cache"].get("method") not in ("none", "residual", "scheduled"):
@@ -91,6 +93,7 @@ def run(args: argparse.Namespace) -> Path:
         "astra_revision": git_revision(paths["astra_repo"]),
         "upstream_files_sha256": source_digest,
         "weights_sha256": weight_digest,
+        "gpu_preflight": selected_gpu,
         "torch_profiler": bool(args.profiler),
         "generated_video": str(output_file),
         "started_utc": datetime.now(timezone.utc).isoformat(),
