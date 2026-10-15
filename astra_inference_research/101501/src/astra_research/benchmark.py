@@ -60,6 +60,12 @@ def compare_pair(base: dict[str, Any], candidate: dict[str, Any]) -> dict[str, A
         mismatches.append("generation/input/config mismatch")
     if base.get("torch_profiler") or candidate.get("torch_profiler"):
         mismatches.append("torch.profiler enabled")
+    # Optional verified weight manifest digest; both runs must match if present.
+    weight_a = base.get("weights_sha256")
+    weight_b = candidate.get("weights_sha256")
+    if weight_a or weight_b:
+        if not weight_a or weight_a != weight_b:
+            mismatches.append("checkpoint SHA256 manifests mismatch")
     b, c = base["instrumentation"], candidate["instrumentation"]
     if b.get("dit_forward_calls") != c.get("dit_forward_calls"):
         mismatches.append("DiT forward count differs")
