@@ -1,0 +1,54 @@
+{
+  "seed": 0,
+  "paths": {
+    "astra_repo": "TODO_ABSOLUTE_PATH_ASTRA_SOURCE",
+    "astra_checkpoint": "TODO_ABSOLUTE_PATH_ASTRA_CKPT",
+    "wan_model_dir": "TODO_ABSOLUTE_PATH_WAN2_1_1_3B",
+    "condition_image": "TODO_ABSOLUTE_PATH_CONDITION_IMAGE"
+  },
+  "generation": {
+    "initial_condition_frames": 1,
+    "frames_per_generation": 8,
+    "total_frames_to_generate": 24,
+    "max_history_frames": 100,
+    "device": "cuda",
+    "prompt": "TODO_COPY_VERIFIED_GARDEN_1_PROMPT",
+    "modality_type": "sekai",
+    "use_real_poses": false,
+    "use_camera_cfg": false,
+    "camera_guidance_scale": 2,
+    "text_guidance_scale": 1,
+    "moe_num_experts": 3,
+    "moe_top_k": 1,
+    "cam_type": 4,
+    "use_gt_prompt": false,
+    "add_icons": false
+  },
+  "measurement": {
+    "steps": 50
+  },
+  "token_cache": {
+    "blocks": [
+      0,
+      4
+    ],
+    "policy": "change_topk",
+    "model_checkpoint": null,
+    "ratios": {
+      "4x": 0.25,
+      "2x": 0.25,
+      "1x": 0.5,
+      "target": 0.75
+    },
+    "min_per_stream": 1,
+    "max_age": 1,
+    "first_full_steps": 1,
+    "force_last_step_full": true,
+    "coarse_threshold": null,
+    "horizon_boost": 0
+  },
+  "collection": {
+    "enabled": false,
+    "samples_per_step": 128
+  }
+}
