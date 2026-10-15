@@ -97,17 +97,20 @@ class TokenGate:
                 scores = difference / scale
         if scores.shape != (layout.total,):
             raise ValueError("Gate scores must be one scalar per token")
-        # Short horizon: step/age dependence. Long horizon: chunk number is
-        # merely a simple proxy, not evidence of future safety.
-        scores = scores.float() * (1 + self.config.horizon_boost * chunk / max(1,chunk+1))
+        # Short horizon: feature change/age. Long horizon: explicit
+        # chunk-conditioned refresh BUDGET, not a useless global score scale.
+        # This is a heuristic horizon proxy, NOT a learned future-risk signal.
+        scores = scores.float()
+        horizon_factor = 1 + self.config.horizon_boost * chunk / max(1, chunk+1)
         result = last_refresh < 0
         result = result | ((step - last_refresh) > self.config.max_age)
         for stream in layout.streams:
             if stream.count == 0:
                 continue
             local = scores[stream.start:stream.stop]
+            effective_ratio = min(1.0, self.config.ratios.get(stream.name, 1.0) * horizon_factor)
             keep = max(self.config.min_per_stream,
-                       int(round(stream.count * self.config.ratios.get(stream.name, 1.0))))
+                       int(round(stream.count * effective_ratio)))
             keep = min(stream.count, keep)
             if keep:
                 winners = local.topk(keep, sorted=False).indices + stream.start
