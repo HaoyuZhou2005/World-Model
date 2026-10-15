@@ -50,7 +50,10 @@ def compare_pair(base: dict[str, Any], candidate: dict[str, Any]) -> dict[str, A
     for key in ("astra_revision",):
         left, right = base.get(key), candidate.get(key)
         if not left or left.startswith("UNKNOWN") or not right or right.startswith("UNKNOWN"):
-            mismatches.append(f"{key} not verified")
+            hashes_a = base.get("upstream_files_sha256")
+            hashes_b = candidate.get("upstream_files_sha256")
+            if not hashes_a or hashes_a != hashes_b:
+                mismatches.append(f"{key} and upstream file hashes not verified")
         elif left != right:
             mismatches.append(key)
     if normalized_config(base) != normalized_config(candidate):
