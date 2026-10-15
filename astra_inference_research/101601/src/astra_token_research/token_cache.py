@@ -109,10 +109,15 @@ class TokenResidualCache:
             self.partial_calls += 1
         for stream in layout.streams:
             counts = self.by_stream.setdefault(
-                stream.name, {"fresh_rows":0, "stale_rows":0})
-            selected = int(mask[stream.start:stream.stop].sum().item())
-            counts["fresh_rows"] += selected
-            counts["stale_rows"] += stream.count-selected
+                stream.name, {"fresh_rows":None, "stale_rows":None})
+            # Keep counts as CUDA scalar tensors; .item() in every block would
+            # force repeated CUDA synchronization and distort cache timings.
+            selected = mask[stream.start:stream.stop].sum(dtype=torch.long)
+            skipped = torch.tensor(stream.count,device=x.device,dtype=torch.long)-selected
+            counts["fresh_rows"] = (selected if counts["fresh_rows"] is None else
+                                     counts["fresh_rows"]+selected)
+            counts["stale_rows"] = (skipped if counts["stale_rows"] is None else
+                                     counts["stale_rows"]+skipped)
         return result
 
     def statistics(self):
@@ -126,7 +131,11 @@ class TokenResidualCache:
             "reused_query_rows": self.stale_rows,
             "query_row_skip_ratio": self.stale_rows / self.total_query_rows
                 if self.total_query_rows else 0.0,
-            "per_stream": self.by_stream,
+            "per_stream": {
+                name: {key: int(value.item()) if value is not None else 0
+                       for key,value in counts.items()}
+                for name,counts in self.by_stream.items()
+            },
             "scope": "within denoising trajectory of one chunk only",
             "warning": "Skipped query rows != full DiT FLOPs or end-to-end speedup.",
         }
