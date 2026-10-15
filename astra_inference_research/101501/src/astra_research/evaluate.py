@@ -69,7 +69,8 @@ def evaluate_pair(
             "chunk": chunk, "start": start, "stop": stop,
             "mae_to_no_cache": absolute / count,
             "rmse_to_no_cache": mse ** 0.5,
-            "psnr_to_no_cache_db": float("inf") if mse == 0 else 10 * log10(255 ** 2 / mse),
+            "psnr_to_no_cache_db": None if mse == 0 else 10 * log10(255 ** 2 / mse),
+            "perfect_match": mse == 0,
         })
         # Frame-difference over the same contiguous generated range only;
         # not a ground-truth temporal coherence metric.
