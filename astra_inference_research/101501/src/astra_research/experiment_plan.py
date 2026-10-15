@@ -55,6 +55,8 @@ def generate(template: dict, output_root: Path, *, num_blocks: int,
             c["block_indices"] = list(range(num_blocks))
         else:
             c["block_indices"] = [i for i in c["block_indices"] if i < num_blocks]
+        if name == "protect_first_last_k4":
+            c["period_by_block"] = {"0": 1, str(num_blocks - 1): 1}
         if "period_by_block" in c:
             c["period_by_block"] = {
                 key: value for key, value in c["period_by_block"].items()
