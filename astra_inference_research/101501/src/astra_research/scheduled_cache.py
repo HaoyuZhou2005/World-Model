@@ -5,8 +5,8 @@ FramePack history streams, RoPE indices and fresh target tokens change.
 
 Schedule:
 - every chunk's first \`warmup_steps\` are computed in full;
-- a selected block with period p refreshes at steps s satisfying
-  (s - warmup_steps) % p == 0; all other steps may reuse its residual;
+- a selected block with period p refreshes at steps s divisible by p;
+  other steps may reuse its residual (matching the prior interval-2 convention);
 - max_age bounds how far a residual can be reused after last full compute.
 - p=1 means always recompute (use this for protected/sensitive layers).
 
@@ -70,7 +70,7 @@ class ScheduledResidualCache:
         if step < warmup:
             return True
         period = self.period_by_block.get(block, self.default_period)
-        return period == 1 or (step - warmup) % period == 0
+        return period == 1 or step % period == 0
 
     def execute(self, block_index: int, x: Any, forward_fn: Callable[[], Any], *,
                 chunk: int, step: int, branch: int) -> Any:
