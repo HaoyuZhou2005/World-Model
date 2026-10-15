@@ -13,7 +13,7 @@ from pathlib import Path
 
 DEFAULT_VARIANTS: dict[str, dict] = {
     "baseline": {"mode": "baseline", "cache": {"method": "scheduled",
-        "block_indices": [], "default_period": 1, "warmup_steps": 1, "max_age": 1}},
+        "block_indices": list(range(30)), "default_period": 2, "warmup_steps": 1, "max_age": 1}},
     "uniform_i2_k1": {"mode": "cache", "cache": {"method": "scheduled",
         "block_indices": list(range(30)), "default_period": 2, "warmup_steps": 1, "max_age": 1}},
     "uniform_i2_k2": {"mode": "cache", "cache": {"method": "scheduled",
