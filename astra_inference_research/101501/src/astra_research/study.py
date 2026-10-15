@@ -32,7 +32,8 @@ def main() -> None:
     if args.task == "configs":
         from .experiment_plan import generate
         template = json.loads(Path(args.template).read_text(encoding="utf-8"))
-        result = generate(template, Path(args.out), num_blocks=args.num_blocks)
+        result = generate(template, Path(args.out), num_blocks=args.num_blocks,
+                          template_base=Path(args.template).expanduser().resolve().parent)
     elif args.task == "videos":
         from .evaluate import evaluate_pair
         result = evaluate_pair(args.reference, args.candidate,
