@@ -14,6 +14,7 @@ import types
 from .gate import GateConfig, TokenGate
 from .layout import LayoutRecorder
 from .token_cache import TokenResidualCache
+from .collector import TeacherCollector
 
 
 @dataclass(frozen=True)
@@ -46,11 +47,17 @@ class TokenInstrumentation:
             force_last_step_full=bool(cache_cfg.get("force_last_step_full",True)),
             horizon_boost=float(cache_cfg.get("horizon_boost",0.0)))
         self.token_cache = TokenResidualCache(
-            TokenGate(gate_config, self.steps),
+            TokenGate(gate_config, self.steps,
+                      policy=cache_cfg.get("policy","change_topk"),
+                      model_checkpoint=cache_cfg.get("model_checkpoint")),
             selected_blocks=[int(i) for i in cache_cfg.get("blocks",[])],
             enabled=cache_enabled)
         if cache_enabled and not self.token_cache.selected_blocks:
             raise ValueError("No selected blocks; no optimization would occur")
+        collection=settings.get("collection",{})
+        self.collector=TeacherCollector(int(collection.get("samples_per_step",128))) if collection.get("enabled",False) else None
+        if self.collector is not None and cache_enabled:
+            raise ValueError("Teacher collection requires NO-cache full model computations")
         self.recorder = LayoutRecorder()
         self.context: Context | None = None
         self.forward_count = 0
@@ -112,6 +119,12 @@ class TokenInstrumentation:
                     context = outer.context
                     if context.step == 0 and context.branch == 0:
                         outer.layouts_by_chunk[context.chunk] = layout.as_dict()
+                    if outer.collector is not None:
+                        full = original(x, *call_args, **call_kwargs)
+                        outer.collector.observe(x, full, layout=layout,
+                            chunk=context.chunk, step=context.step, branch=context.branch,
+                            block_id=block_id, steps=outer.steps)
+                        return full
                     return outer.token_cache.run(
                         self_block, block_id, x, original, call_args, call_kwargs,
                         layout=layout, chunk=context.chunk,
@@ -137,5 +150,6 @@ class TokenInstrumentation:
             "dit_cuda_ms_total": float(sum(by_chunk.values())) if self.cuda_events else None,
             "layout_by_chunk": self.layouts_by_chunk,
             "cache": self.token_cache.statistics(),
+            "teacher_records": self.collector.rows if self.collector is not None else 0,
             "caveat": "CUDA events include hook overhead; skipped queries != skipped model FLOPs",
         }
