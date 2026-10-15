@@ -48,10 +48,11 @@ class TokenInstrumentation:
             horizon_boost=float(cache_cfg.get("horizon_boost",0.0)))
         self.token_cache = TokenResidualCache(
             TokenGate(gate_config, self.steps,
-                      policy=cache_cfg.get("policy","change_topk"),
+                      policy=("change_topk" if cache_cfg.get("policy")=="intervention"
+                              else cache_cfg.get("policy","change_topk")),
                       model_checkpoint=cache_cfg.get("model_checkpoint")),
             selected_blocks=[int(i) for i in cache_cfg.get("blocks",[])],
-            enabled=cache_enabled)
+            enabled=cache_enabled, intervention=cache_cfg.get("intervention"))
         if cache_enabled and not self.token_cache.selected_blocks:
             raise ValueError("No selected blocks; no optimization would occur")
         collection=settings.get("collection",{})
