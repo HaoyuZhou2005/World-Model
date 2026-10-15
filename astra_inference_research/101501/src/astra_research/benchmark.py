@@ -63,9 +63,10 @@ def compare_pair(base: dict[str, Any], candidate: dict[str, Any]) -> dict[str, A
     # Optional verified weight manifest digest; both runs must match if present.
     weight_a = base.get("weights_sha256")
     weight_b = candidate.get("weights_sha256")
-    if weight_a or weight_b:
-        if not weight_a or weight_a != weight_b:
-            mismatches.append("checkpoint SHA256 manifests mismatch")
+    if not weight_a or not weight_b:
+        mismatches.append("checkpoint SHA256 manifest missing")
+    elif weight_a != weight_b:
+        mismatches.append("checkpoint SHA256 manifests mismatch")
     b, c = base["instrumentation"], candidate["instrumentation"]
     if b.get("dit_forward_calls") != c.get("dit_forward_calls"):
         mismatches.append("DiT forward count differs")
