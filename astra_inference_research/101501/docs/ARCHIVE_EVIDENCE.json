@@ -1,0 +1,79 @@
+{
+  "archive_name": "26101501.zip",
+  "archive_date": "2026-10-15",
+  "archive_inspected": true,
+  "contains_uploaded_model_weights": false,
+  "metadata_json_count": 86,
+  "metadata_statuses": {
+    "completed": 86
+  },
+  "mp4_file_count": 0,
+  "experiment_groups": 9,
+  "settings_from_summaries": {
+    "model": "Astra / Wan2.1-T2V-1.3B",
+    "scene": "garden_1",
+    "seed": 0,
+    "latent_frames_per_chunk": 8,
+    "chunks": 3,
+    "denoising_steps_per_chunk": 50,
+    "camera_cfg": false
+  },
+  "sha256_from_uploaded_stage_b_weights_manifest": {
+    "astra_ckpt": "5ca9c5e04e26fdbe37ea4819ea623d76c69747f9fcbacd5ca47f43e49cbfbd9f",
+    "wan_dit": "96b6b242ca1c2f24e9d02cd6596066fab6d310e2d7538f33ae267cb18d957e8f",
+    "wan_t5": "7cace0da2b446bbbbc57d031ab6cf163a3d59b366da94e5afe36745b746fd81d",
+    "wan_vae": "38071ab59bd94681c686fa51d75a1968f64e470262043be31f7a094e442fd981"
+  },
+  "records_transcribed_not_independently_recomputed": [
+    {
+      "policy": "baseline",
+      "dit_seconds": 138.57161627197266,
+      "dit_speedup": 1,
+      "mae_to_nocache": null
+    },
+    {
+      "policy": "i2",
+      "dit_seconds": 71.20139326667785,
+      "dit_speedup": 1.9461924818376268,
+      "mae_to_nocache": 10.399046274726848,
+      "mae_per_chunk": [
+        5.594361786149506,
+        11.197199399247129,
+        14.634056704268497
+      ]
+    },
+    {
+      "policy": "i2_k2",
+      "dit_seconds": 73.90353896903991,
+      "dit_speedup": 1.875033566796089,
+      "mae_to_nocache": 8.945432589049696,
+      "mae_per_chunk": [
+        5.886527323926616,
+        9.077301625308827,
+        12.055461994399373
+      ]
+    },
+    {
+      "policy": "i2_k4",
+      "dit_seconds": 76.80393126106262,
+      "dit_speedup": 1.8042255649773553,
+      "mae_to_nocache": 8.104447055150784,
+      "mae_per_chunk": [
+        5.239455368172409,
+        7.505695206079728,
+        11.723347694853432
+      ]
+    }
+  ],
+  "evidence_paths_in_uploaded_archive": [
+    "26101501/总结.md",
+    "26101501/experiments/20261014_dual_horizon_k/rows.json",
+    "26101501/experiments/20261014_stage_b/WEIGHTS.json",
+    "26101501/experiments/20261014_stage_c_framepack_map/overlap_report.json"
+  ],
+  "limits": [
+    "No video files were provided in zip; numerical MAE cannot be independently reproduced here",
+    "Checkpoint and source binaries were not available for validation",
+    "Historical single-scene results are not proof of generalization"
+  ]
+}

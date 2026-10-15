@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astra-inference-research"
+version = "0.1.0"
+description = "Training-free Astra inference profiling and experimental residual caching"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "numpy>=1.24", "imageio>=2.30", "imageio-ffmpeg>=0.4"]
+
+[project.scripts]
+astra-research = "astra_research.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
