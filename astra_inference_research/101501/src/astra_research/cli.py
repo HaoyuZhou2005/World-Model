@@ -41,9 +41,9 @@ def run(args: argparse.Namespace) -> Path:
         }, ensure_ascii=False, indent=2))
         return Path(".")
     paths = preflight(config)
-    if args.mode == "cache" and config["cache"].get("method") != "residual":
-        raise ValueError("Cache mode requires cache.method=residual")
-    if args.mode == "baseline" and config["cache"].get("method") not in ("none", "residual"):
+    if args.mode == "cache" and config["cache"].get("method") != "scheduled":
+        raise ValueError("101501 cache mode requires cache.method=scheduled")
+    if args.mode == "baseline" and config["cache"].get("method") not in ("none", "residual", "scheduled"):
         raise ValueError("Unexpected cache method")
     output_root = resolve_path(config["paths"].get("output_root", "../runs"), config)
     run_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
