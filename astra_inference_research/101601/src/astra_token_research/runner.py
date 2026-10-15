@@ -110,8 +110,8 @@ def run(config: dict, *, cache_enabled: bool, outdir: Path,
         raise RuntimeError("CUDA GPU required for official Astra")
     # Explicit one-card selection, no automatic GPU selection.
     visible = os.environ.get("CUDA_VISIBLE_DEVICES","")
-    if not visible.isdigit() or torch.cuda.device_count() != 1:
-        raise RuntimeError("Set CUDA_VISIBLE_DEVICES to ONE checked idle GPU before running")
+    from .safety import one_idle_gpu
+    gpu = one_idle_gpu()
     seed = int(config.get("seed",0))
     random.seed(seed)
     np.random.seed(seed)
@@ -127,7 +127,7 @@ def run(config: dict, *, cache_enabled: bool, outdir: Path,
         "seed":seed,"config":config,"source_sha256":source_provenance(paths),
         "weights":{k:{"file":str(v),"bytes":v.stat().st_size}
                    for k,v in paths.items() if k in ("astra_checkpoint",)},
-        "gpu_visible":visible,"profiler":profiler,
+        "gpu_visible":visible,"gpu_preflight":gpu,"profiler":profiler,
         "generated_video":str(run_dir/"generated.mp4"),
     }
     metadata = run_dir/"metadata.json"
