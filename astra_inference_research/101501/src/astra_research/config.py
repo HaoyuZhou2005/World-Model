@@ -39,12 +39,23 @@ def load_config(path: str | Path) -> dict[str, Any]:
     if config["generation"].get("frames_per_generation", 0) <= 0:
         raise ValueError("frames_per_generation must be positive (latent frames)")
     cache = config["cache"]
-    if cache.get("method", "none") not in ("none", "residual"):
-        raise ValueError("Only none/residual caching is implemented")
+    if cache.get("method", "none") not in ("none", "residual", "scheduled"):
+        raise ValueError("Only none/residual/scheduled caching is implemented")
     if int(cache.get("interval", 2)) < 2:
         raise ValueError("cache.interval must be >= 2")
     if any(int(x) < 0 for x in cache.get("block_indices", [])):
         raise ValueError("cache.block_indices must be nonnegative")
+    if cache.get("method") == "scheduled":
+        if int(cache.get("default_period", 2)) < 1:
+            raise ValueError("cache.default_period must be >= 1")
+        if int(cache.get("max_age", 1)) < 1:
+            raise ValueError("cache.max_age must be >= 1")
+        if int(cache.get("warmup_steps", 1)) < 1:
+            raise ValueError("cache.warmup_steps must be >= 1")
+        if any(int(value) < 1 for value in cache.get("warmup_by_chunk", {}).values()):
+            raise ValueError("cache.warmup_by_chunk values must be >= 1")
+        if any(int(value) < 1 for value in cache.get("period_by_block", {}).values()):
+            raise ValueError("cache.period_by_block values must be >= 1")
     config["_config_file"] = str(config_path)
     return config
 
