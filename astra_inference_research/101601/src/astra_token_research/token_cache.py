@@ -69,7 +69,7 @@ class TokenResidualCache:
         else:
             mask = self.gate.select(
                 x, state.prior_input, state.last_refresh,
-                layout, chunk=chunk, step=step)
+                layout, chunk=chunk, step=step, previous_delta=state.delta)
         idx = torch.nonzero(mask, as_tuple=False).flatten()
         m, n = int(idx.numel()), layout.total
         self.total_query_rows += n
