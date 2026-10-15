@@ -16,6 +16,7 @@ from typing import Any
 import types
 
 from .cache import ResidualCache
+from .scheduled_cache import ScheduledResidualCache
 from .probe import ChunkProbe
 
 
@@ -32,13 +33,28 @@ class AstraInstrumentation:
         self.torch = torch
         self.config = config
         self.cache_config = config["cache"]
-        self.cache = ResidualCache(
-            enabled=cache_enabled,
-            indices=[int(i) for i in self.cache_config.get("block_indices", [])],
-            interval=int(self.cache_config.get("interval", 2)),
-            max_age=int(self.cache_config.get("max_age", 1)),
-            relative_threshold=self.cache_config.get("relative_threshold"),
-        )
+        cache_method = self.cache_config.get("method", "none")
+        indices = [int(i) for i in self.cache_config.get("block_indices", [])]
+        if cache_enabled and cache_method != "scheduled":
+            raise ValueError(
+                "101501 only allows method=scheduled for new cache experiments. "
+                "Use archived 101401 for the original residual method.")
+        if cache_method == "scheduled":
+            self.cache = ScheduledResidualCache(
+                enabled=cache_enabled, indices=indices,
+                period_by_block=self.cache_config.get("period_by_block", {}),
+                default_period=int(self.cache_config.get("default_period", 2)),
+                warmup_steps=int(self.cache_config.get("warmup_steps", 1)),
+                warmup_by_chunk=self.cache_config.get("warmup_by_chunk", {}),
+                max_age=int(self.cache_config.get("max_age", 1)),
+            )
+        else:
+            self.cache = ResidualCache(
+                enabled=False, indices=indices,
+                interval=int(self.cache_config.get("interval", 2)),
+                max_age=int(self.cache_config.get("max_age", 1)),
+                relative_threshold=None,
+            )
         probe_config = config.get("probe", {})
         if cache_enabled and probe_config.get("enabled", False):
             raise ValueError("Run feature probes only with cache OFF; cached activations bias similarity")
