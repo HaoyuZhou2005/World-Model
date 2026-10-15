@@ -1,0 +1,79 @@
+{
+  "seed": 0,
+  "paths": {
+    "astra_repo": "TODO_ABSOLUTE_PATH_TO_OFFICIAL_ASTRA_CLONE",
+    "astra_checkpoint": "TODO_ABSOLUTE_PATH_TO_ASTRA_DIFFUSION_PYTORCH_MODEL_CKPT",
+    "wan_model_dir": "TODO_ABSOLUTE_PATH_TO_WAN2_1_T2V_1_3B",
+    "condition_image": "TODO_ABSOLUTE_PATH_TO_CONDITION_IMAGE_PNG",
+    "output_root": "../runs"
+  },
+  "generation": {
+    "initial_condition_frames": 1,
+    "frames_per_generation": 8,
+    "total_frames_to_generate": 24,
+    "max_history_frames": 100,
+    "device": "cuda",
+    "prompt": "TODO_PROMPT_FROM_YOUR_VERIFIED_ASTRA_GARDEN1_BASELINE",
+    "modality_type": "sekai",
+    "use_real_poses": false,
+    "use_camera_cfg": false,
+    "camera_guidance_scale": 2,
+    "text_guidance_scale": 1,
+    "moe_num_experts": 3,
+    "moe_top_k": 1,
+    "cam_type": 4,
+    "use_gt_prompt": false,
+    "add_icons": false
+  },
+  "cache": {
+    "method": "scheduled",
+    "block_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+    ],
+    "default_period": 2,
+    "warmup_steps": 4,
+    "warmup_by_chunk": {
+      "0": 4,
+      "1": 4,
+      "2": 4
+    },
+    "max_age": 1,
+    "period_by_block": {}
+  },
+  "measurement": {
+    "expected_denoising_steps": 50
+  },
+  "probe": {
+    "enabled": false,
+    "block_indices": []
+  }
+}
