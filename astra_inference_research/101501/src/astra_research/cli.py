@@ -12,7 +12,7 @@ import traceback
 import uuid
 
 from .config import fingerprint, generation_kwargs, load_config, preflight, resolve_path
-from .report import compare, paired_video_metrics
+from .benchmark import read_completed, compare_pair
 from .identity import source_hashes
 
 
@@ -150,7 +150,7 @@ def main() -> None:
     comp = sub.add_parser("compare", help="Compare recorded runs")
     comp.add_argument("--reference", required=True)
     comp.add_argument("--candidate", required=True)
-    comp.add_argument("--video-metrics", action="store_true")
+    comp.add_argument("--video-metrics", action="store_true", help="Deprecated; use python -m astra_research.study videos")
     args = parser.parse_args()
     if args.command == "doctor":
         cfg = load_config(args.config)
@@ -162,11 +162,13 @@ def main() -> None:
     elif args.command == "run":
         print(f"Output folder: {run(args)}")
     else:
-        result = compare(args.reference, args.candidate)
         if args.video_metrics:
-            result["pixel_deviation"] = paired_video_metrics(
-                Path(args.reference) / "generated.mp4",
-                Path(args.candidate) / "generated.mp4")
+            raise ValueError(
+                "Use python -m astra_research.study videos --reference ... "
+                "--candidate ... --rgb-per-chunk ... --chunks ... "
+                "(explicit frame boundary validation required)")
+        result = compare_pair(read_completed(args.reference),
+                              read_completed(args.candidate))
         print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
