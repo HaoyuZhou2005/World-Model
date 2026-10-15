@@ -7,7 +7,7 @@
 - Audit: **[docs/AUDIT.md](docs/AUDIT.md)**.
 - Detailed local commands and validation plan: **[docs/NEXT_EXPERIMENTS.md](docs/NEXT_EXPERIMENTS.md)**.
 
-**Important source discrepancy:** The uploaded archive contains **86 completed metadata.json files but no MP4s**. Old video-quality numbers are drawn from the saved summaries; the new code cannot recalculate them until the actual videos are obtained from the server.
+**Data availability clarification (from the user):** The experiments **did generate video files**, but those MP4s were **intentionally excluded from the uploaded ZIP to make it smaller**. The ZIP contains 86 completed `metadata.json` files and no MP4s. The recorded video-quality metrics therefore remain historical results that could not be independently recomputed from the supplied archive; retrieve the existing videos when independent visual/metric checks are needed.
 
 ## Scientific starting point
 
