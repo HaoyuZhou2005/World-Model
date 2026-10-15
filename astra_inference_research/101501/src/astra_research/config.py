@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-REQUIRED_PATHS = ("astra_repo", "astra_checkpoint", "wan_model_dir", "condition_image")
+REQUIRED_PATHS = ("astra_repo", "astra_checkpoint", "wan_model_dir", "condition_image", "identity_manifest")
 REQUIRED_WAN_FILES = (
     "diffusion_pytorch_model.safetensors",
     "models_t5_umt5-xxl-enc-bf16.pth",
