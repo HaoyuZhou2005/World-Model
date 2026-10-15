@@ -5,7 +5,8 @@
     "astra_checkpoint": "TODO_ABSOLUTE_PATH_TO_ASTRA_DIFFUSION_PYTORCH_MODEL_CKPT",
     "wan_model_dir": "TODO_ABSOLUTE_PATH_TO_WAN2_1_T2V_1_3B",
     "condition_image": "TODO_ABSOLUTE_PATH_TO_CONDITION_IMAGE_PNG",
-    "output_root": "../runs"
+    "output_root": "../runs",
+    "identity_manifest": "TODO_ABSOLUTE_PATH_TO_IDENTITY_MANIFEST_JSON"
   },
   "generation": {
     "initial_condition_frames": 1,
