@@ -31,6 +31,34 @@ def dump_json(path: Path, payload: dict) -> None:
                     encoding="utf-8")
 
 
+def verified_identity(paths):
+    """Require a precomputed manifest, validate source hashes and all weight file sizes.
+
+    Large weights are hashed once by identity.py, not repeatedly during inference.
+    This cannot detect same-size file edits AFTER manifest creation; rehash on change.
+    """
+    doc = json.loads(paths["identity_manifest"].read_text(encoding="utf-8"))
+    upstream = source_hashes(paths["astra_repo"])
+    if doc.get("astra_source_files_sha256") != upstream:
+        raise RuntimeError("Astra source changed since identity manifest generation")
+    expected = {
+        "astra_ckpt": paths["astra_checkpoint"],
+        "wan_dit": paths["wan_model_dir"] / "diffusion_pytorch_model.safetensors",
+        "wan_t5": paths["wan_model_dir"] / "models_t5_umt5-xxl-enc-bf16.pth",
+        "wan_vae": paths["wan_model_dir"] / "Wan2.1_VAE.pth",
+    }
+    hashes = {}
+    for name, file in expected.items():
+        entry = doc.get("weights", {}).get(name)
+        if not entry or entry.get("bytes") != file.stat().st_size:
+            raise RuntimeError(f"Weight manifest missing or wrong size for {name}")
+        digest = entry.get("sha256")
+        if not isinstance(digest, str) or len(digest) != 64:
+            raise RuntimeError(f"Weight hash must be a full SHA-256 for {name}")
+        hashes[name] = digest
+    return upstream, hashes
+
+
 def run(args: argparse.Namespace) -> Path:
     config = load_config(args.config)
     if args.dry_run:
@@ -42,6 +70,7 @@ def run(args: argparse.Namespace) -> Path:
         }, ensure_ascii=False, indent=2))
         return Path(".")
     paths = preflight(config)
+    source_digest, weight_digest = verified_identity(paths)
     if args.mode == "cache" and config["cache"].get("method") != "scheduled":
         raise ValueError("101501 cache mode requires cache.method=scheduled")
     if args.mode == "baseline" and config["cache"].get("method") not in ("none", "residual", "scheduled"):
@@ -60,7 +89,8 @@ def run(args: argparse.Namespace) -> Path:
         "config_fingerprint": config_hash,
         "effective_config": sanitized, "generation_kwargs": kwargs,
         "astra_revision": git_revision(paths["astra_repo"]),
-        "upstream_files_sha256": source_hashes(paths["astra_repo"]),
+        "upstream_files_sha256": source_digest,
+        "weights_sha256": weight_digest,
         "torch_profiler": bool(args.profiler),
         "generated_video": str(output_file),
         "started_utc": datetime.now(timezone.utc).isoformat(),
@@ -125,6 +155,7 @@ def main() -> None:
     if args.command == "doctor":
         cfg = load_config(args.config)
         paths = preflight(cfg)
+        source_digest, weight_digest = verified_identity(paths)
         print(json.dumps({"status": "paths_ok", "paths": {k: str(v) for k, v in paths.items()},
                           "astra_git_revision": git_revision(paths["astra_repo"])},
                          indent=2, ensure_ascii=False))
