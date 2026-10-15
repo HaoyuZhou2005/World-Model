@@ -99,3 +99,15 @@ def test_off_is_exact_forward():
                            chunk=0, step=step, branch=0)
         assert torch.equal(result, x + step)
     assert called == list(range(6))
+
+
+@pytest.mark.parametrize("k, expected_reuse", [(1, 25), (2, 24), (4, 23)])
+def test_garden_50_step_skip_count_matches_archived_policy(k, expected_reuse):
+    """Archived interval-2 K=1/2/4 reused respectively 50/48/46 percent."""
+    c = cache(warmup_steps=k)
+    x = torch.ones((1, 2))
+    for s in range(50):
+        c.execute(0, x, lambda s=s: x + s,
+                  chunk=0, step=s, branch=0)
+    assert c.reused == expected_reuse
+    assert c.recomputed == 50 - expected_reuse
