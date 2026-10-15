@@ -108,3 +108,34 @@ python -m astra_research.study videos \
 如果多个场景都稳定出现新 Pareto 点，再研究 adaptive gate。
 直到完成 FramePack/rope/action 位置对齐验证，跨 chunk 仅能做
 强制刷新控制，不得直接在目标 token 上复用上一 chunk residual。
+
+
+## Optional ABBA sequential runner (single GPU; never trains)
+
+The driver is **dry-run by default**. Use it only after the previous
+identity/source and official-baseline equivalence checks have passed.
+
+~~~bash
+# No GPU action: print 2 cycles of baseline → cache → cache → baseline.
+python -m astra_research.abba \
+ --manifest configs/sweep_local/manifest.json \
+ --baseline baseline --cache uniform_i2_k4 \
+ --cycles 2 --logs /YOUR/DATA6/tmp/abba_101501
+
+# Run expensive inference only after manual nvidia-smi inspection.
+# export CUDA_VISIBLE_DEVICES=THE_IDLE_PHYSICAL_GPU
+python -m astra_research.abba \
+ --manifest configs/sweep_local/manifest.json \
+ --baseline baseline --cache uniform_i2_k4 \
+ --cycles 2 --logs /YOUR/DATA6/tmp/abba_101501 \
+ --execute
+
+python -m astra_research.abba_report \
+ --manifest /YOUR/DATA6/tmp/abba_101501/abba_results.json \
+ --out /YOUR/DATA6/tmp/abba_101501/summary.json
+~~~
+
+The runner executes sequentially (not concurrently), stops on the first
+failure, and stores stdout/stderr per run. The report rejects mismatched
+source code, weights, generation parameters, seeds, profiles or GPU identities.
+**Do not run automatically on a shared machine unless explicitly intended.**
