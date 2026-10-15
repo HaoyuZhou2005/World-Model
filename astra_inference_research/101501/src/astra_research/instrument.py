@@ -35,10 +35,8 @@ class AstraInstrumentation:
         self.cache_config = config["cache"]
         cache_method = self.cache_config.get("method", "none")
         indices = [int(i) for i in self.cache_config.get("block_indices", [])]
-        if cache_enabled and cache_method != "scheduled":
-            raise ValueError(
-                "101501 only allows method=scheduled for new cache experiments. "
-                "Use archived 101401 for the original residual method.")
+        if cache_enabled and cache_method not in ("scheduled", "residual"):
+            raise ValueError(f"Unsupported cache method: {cache_method}")
         if cache_method == "scheduled":
             self.cache = ScheduledResidualCache(
                 enabled=cache_enabled, indices=indices,
@@ -50,7 +48,7 @@ class AstraInstrumentation:
             )
         else:
             self.cache = ResidualCache(
-                enabled=False, indices=indices,
+                enabled=cache_enabled and cache_method == "residual", indices=indices,
                 interval=int(self.cache_config.get("interval", 2)),
                 max_age=int(self.cache_config.get("max_age", 1)),
                 relative_threshold=None,
