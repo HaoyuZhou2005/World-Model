@@ -14,6 +14,7 @@ def record(mode, time, gpu_ms, cache_cfg=None):
         "status": "completed", "mode": mode, "seed": 0,
         "astra_revision": "UNKNOWN_GIT_REVISION",
         "upstream_files_sha256": {"scripts/infer_demo.py": "deadbeef"},
+        "weights_sha256": {"astra_ckpt": "sha-verified-in-synthetic-fixture"},
         "elapsed_seconds": time, "torch_profiler": False,
         "effective_config": {
             "paths": {"astra_repo": "/stub", "astra_checkpoint": "/stub/weights",
