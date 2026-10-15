@@ -40,15 +40,36 @@ class GateConfig:
 
 
 class TokenGate:
-    def __init__(self, config: GateConfig, num_steps: int):
+    def __init__(self, config: GateConfig, num_steps: int, *, policy: str="change_topk",
+                 model_checkpoint: str | None = None):
         config.validate()
         if num_steps < 2:
             raise ValueError("num_steps must be >=2")
         self.config = config
         self.num_steps = num_steps
+        if policy not in ("change_topk", "learned"):
+            raise ValueError(f"Unknown token gate policy: {policy}")
+        self.policy=policy
+        self.net=None
+        if policy=="learned":
+            if not model_checkpoint:
+                raise ValueError("Learned token gate requires a trained checkpoint")
+            import torch
+            from .train_gate import build_mlp
+            from .features import FEATURE_NAMES
+            state=torch.load(model_checkpoint,map_location="cpu",weights_only=True)
+            if state.get("feature_names")!=FEATURE_NAMES:
+                raise ValueError("Learned gate feature schema mismatch")
+            if state.get("training_objective") not in (
+                "local_residual_proxy_NOT_future_rollout",
+                "future_rollout_counterfactual"):
+                raise ValueError("Unrecognized gate training objective")
+            self.net=build_mlp(int(state["input_dim"]),int(state["hidden_dim"]))
+            self.net.load_state_dict(state["state_dict"], strict=True)
+            self.net.eval()
 
     def select(self, x, prev_x, last_refresh, layout: PackedLayout,
-               *, chunk: int, step: int, scores=None):
+               *, chunk: int, step: int, scores=None, previous_delta=None):
         import torch
         if x.ndim != 3 or x.shape[0] != 1 or x.shape[1] != layout.total:
             raise ValueError("Only B=1 packed tokens [1,S,D] supported")
@@ -61,9 +82,19 @@ class TokenGate:
             return torch.ones(layout.total, dtype=torch.bool, device=x.device)
         # "change" is a latent activation score, NOT RGB frame difference.
         if scores is None:
-            difference = (x.detach().float() - prev_x.float()).abs().mean(-1)[0]
-            scale = prev_x.float().abs().mean(-1)[0].clamp_min(1e-5)
-            scores = difference / scale
+            if self.policy=="learned":
+                if previous_delta is None:
+                    raise ValueError("Learned gate needs prior cached residuals")
+                from .features import token_features
+                feats=token_features(x,prev_x,previous_delta,last_refresh,
+                    layout,chunk=chunk,step=step,steps=self.num_steps)
+                with torch.no_grad():
+                    self.net=self.net.to(x.device)
+                    scores=self.net(feats).flatten().sigmoid()
+            else:
+                difference = (x.detach().float() - prev_x.float()).abs().mean(-1)[0]
+                scale = prev_x.float().abs().mean(-1)[0].clamp_min(1e-5)
+                scores = difference / scale
         if scores.shape != (layout.total,):
             raise ValueError("Gate scores must be one scalar per token")
         # Short horizon: step/age dependence. Long horizon: chunk number is
